@@ -9,6 +9,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 app = dash.Dash(__name__)
+#general configuration
 
 # images
 
@@ -20,7 +21,6 @@ data = pd.read_csv(r"data/World_Happinnes.csv")
 
 var = {1: 'Score', 2: 'GDP per capita', 3: 'Social support', 4: 'Freedom to make life choice',
        5: 'Generosity', 6: 'Perceptions of corruption'}
-df = data.groupby(['Country or region', 'Score'])
 
 """data.groupby(['rank', 'Score', 'Country or region', 'GDP per capita', 'Social support',
                    'Freedom to make life choices', 'Generosity', 'Perceptions of corruption', ])"""
@@ -56,12 +56,15 @@ app.layout = html.Div([
                     html.H1("Indice del planeta feliz", style={
                         'text-align': 'center', 'color': 'blue'}),
                 ], className='row'),
-                html.Img(src='data:image/png;base64,{}'.format(encoded_image)),
                 html.Div([
-                    dcc.Graph(id='bar'),
-                    html.P("El índice global de felicidad es una publicación anual de las Naciones Unidas que mide la felicidad en 157 países, basándose en diversos factores, como el PIB per cápita," +
+                    html.Div([
+                        dcc.Graph(id='bar'),
+                    ], className='two columns'),
+                    html.Div([
+                        html.P("El índice global de felicidad es una publicación anual de las Naciones Unidas que mide la felicidad en 157 países, basándose en diversos factores, como el PIB per cápita," +
                            "la esperanza de vida saludable y el apoyo social, la primera que que se realizo el estudio fue en el 2012"),
-                ], className='two columns'),
+                    ], className='two columns'),
+                ], className='row'),
                 html.Div([
                     html.P(
                         "El promedio para 2019 fue de 5.42 points.El valor más alto fue en Finlandia: 7.77 points y el valor más bajo fue en Rep. Centroafricana: 3.08 points.")
@@ -75,39 +78,46 @@ app.layout = html.Div([
     [Output('map', 'figure'),Output('bar', 'figure')],[Input('select_var', 'value')])
 
 def update_graph(select_var):
-    df = create_data(select_var)
+    
+    main_var = var[select_var]
+    print(main_var)
+    data_bar = data[:10]
 
+    title = 'Distribución del indice de felicadad 2019 por' + main_var
 
-    choropleth = [ dict(
-        type= 'choropleth',
-        z=df,
-        locationmode= 'ISO-3',
-        zmin= 0.,
-        zmax=10.,
-        colorscale=00,
-        showscale=True,
-        colorbar = dict(
-            autotick=False,
+    charts = [ 
+        # Choropleth map
+        px.choropleth(
+                data_frame=data,
+                locationmode='country names',
+                projection='equirectangular',
+                locations=data['Country or region'],
+                color=main_var,
+                hover_data=['Country or region', main_var],
+                color_continuous_scale=px.colors.sequential.YlOrRd,
+                labels={str(main_var)},
+                width= 1280,
+                height=800,
+                scope='world'
         ),
-        font=dict(size=12),
-        hovertemplete = "",
-    )]
+    # Bar chart
+        px.bar(
+            data_bar,
+            x='Country or region', 
+            y=['GDP per capita', 'Social support',	'Healthy life expectancy', 'Freedom to make life choices', 'Generosity', 'Perceptions of corruption'],
+            title='Top 10 de los paises con mejor puntuación'
+        )
+    ]
 
-    layout_dict = dict(
-        title = "",
+    layout_map = dict(
+        title = title,
         font=dict(size=14),
         
         width=1100,
         height=800,
     )
 
-    return {
-
-    }
-
-
-def create_data(var):
-    pass
+    return charts
 
 
 if __name__ == '__main__':
